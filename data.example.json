@@ -1,0 +1,20 @@
+{
+  "app": "local-ledger",
+  "version": 1,
+  "exportedAt": null,
+  "records": [
+    {
+      "id": "example-record-1",
+      "project": "示例项目",
+      "detail": "示例支出",
+      "payer": "示例支付人",
+      "partyType": "个人",
+      "reimbursed": false,
+      "pending": false,
+      "amount": 0,
+      "invoice": null,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}

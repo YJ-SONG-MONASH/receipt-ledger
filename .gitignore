@@ -1,0 +1,11 @@
+data.json
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+本地记账单-*.json
+ledger-*.json
+.DS_Store
+Thumbs.db

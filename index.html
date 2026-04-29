@@ -1,0 +1,2529 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>本地记账单</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f3ec;
+      --surface: #fffdf8;
+      --surface-2: #f1eee7;
+      --line: #ded8cb;
+      --line-strong: #cfc6b6;
+      --text: #252522;
+      --muted: #6f6a60;
+      --muted-2: #918a7c;
+      --accent: #16766f;
+      --accent-2: #0f5f59;
+      --accent-soft: #e4f2ef;
+      --amber: #bd760b;
+      --amber-soft: #fff3d7;
+      --green: #2f7b45;
+      --green-soft: #e7f4e7;
+      --red: #a94442;
+      --red-soft: #f8e5e1;
+      --shadow: 0 18px 45px rgba(65, 53, 35, 0.10);
+      --radius: 8px;
+      --font: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.5;
+      letter-spacing: 0;
+      background:
+        linear-gradient(180deg, rgba(255, 253, 248, 0.82), rgba(246, 243, 236, 0) 280px),
+        var(--bg);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    .app {
+      width: calc(100% - 24px);
+      max-width: none;
+      margin: 0 auto;
+      padding: 24px 0 36px;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
+      min-height: calc(100vh - 60px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      background: #fbf8f1;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding-bottom: 4px;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 760;
+      line-height: 1.1;
+      color: #1f2421;
+    }
+
+    .brand-sub {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .brand-author {
+      margin: 3px 0 0;
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: var(--radius);
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), #2c9c7f);
+      box-shadow: 0 10px 22px rgba(22, 118, 111, 0.22);
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fffaf1;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 740;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .entry-form {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label,
+    .switch-label,
+    .upload-label {
+      color: #474238;
+      font-size: 13px;
+      font-weight: 690;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="search"],
+    select {
+      width: 100%;
+      min-height: 40px;
+      padding: 9px 11px;
+      color: var(--text);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: #fffefa;
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    input:focus,
+    select:focus,
+    .upload-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(22, 118, 111, 0.14);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .switch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .check-tile {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      padding: 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: #fffefa;
+      color: #504a3f;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .check-tile input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+    }
+
+    .check-tile:has(input:checked) {
+      border-color: rgba(22, 118, 111, 0.45);
+      color: var(--accent-2);
+      background: var(--accent-soft);
+    }
+
+    .upload-box {
+      display: grid;
+      gap: 9px;
+      padding: 12px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      background: #fffefa;
+    }
+
+    .upload-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .file-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+    }
+
+    .file-input {
+      width: 100%;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 9px 13px;
+      border-radius: var(--radius);
+      color: #fff;
+      background: var(--accent);
+      font-size: 13px;
+      font-weight: 720;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 120ms ease, background 160ms ease, box-shadow 160ms ease;
+      white-space: nowrap;
+    }
+
+    .button:hover {
+      background: var(--accent-2);
+      box-shadow: 0 8px 18px rgba(22, 118, 111, 0.18);
+    }
+
+    .button:active {
+      transform: translateY(1px);
+    }
+
+    .button.secondary {
+      color: #36322b;
+      border: 1px solid var(--line-strong);
+      background: #fffefa;
+    }
+
+    .button.secondary:hover {
+      background: var(--surface-2);
+      box-shadow: none;
+    }
+
+    .button.danger {
+      color: var(--red);
+      border: 1px solid rgba(169, 68, 66, 0.35);
+      background: var(--red-soft);
+    }
+
+    .button.danger:hover {
+      background: #f4d8d2;
+      box-shadow: none;
+    }
+
+    .button.icon-only {
+      width: 34px;
+      min-height: 34px;
+      padding: 0;
+    }
+
+    .button.small {
+      min-height: 32px;
+      padding: 6px 9px;
+      font-size: 12px;
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .icon.fill {
+      fill: currentColor;
+      stroke: none;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      min-width: 0;
+      background: #fffdf8;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: #fffefa;
+    }
+
+    .toolbar-title {
+      min-width: 0;
+    }
+
+    .toolbar-title h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .toolbar-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      border-bottom: 1px solid var(--line);
+      background: var(--line);
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 16px 18px;
+      background: #fbf8f1;
+    }
+
+    .metric-label {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 690;
+    }
+
+    .metric-value {
+      overflow: hidden;
+      margin: 0;
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 760;
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .metric-value.pending {
+      color: var(--amber);
+    }
+
+    .metric-value.done {
+      color: var(--green);
+    }
+
+    .content {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      min-height: 0;
+      padding: 18px 22px 22px;
+      gap: 14px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(160px, 220px) auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .project-panel {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fffaf1;
+    }
+
+    .project-panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .project-panel h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .project-panel p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+    }
+
+    .project-grid .empty {
+      grid-column: 1 / -1;
+      min-height: 120px;
+    }
+
+    .project-card {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .project-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .project-title {
+      overflow: hidden;
+      margin: 0;
+      color: #2e2a24;
+      font-size: 14px;
+      font-weight: 760;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-count {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .project-total {
+      color: var(--accent-2);
+      font-size: 20px;
+      font-weight: 780;
+      line-height: 1.1;
+    }
+
+    .project-items {
+      display: grid;
+      gap: 6px;
+      max-height: 128px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .project-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 0;
+      border-top: 1px solid #eee7db;
+      color: #4b453b;
+      font-size: 12px;
+    }
+
+    .project-item:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .project-item-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-item-meta {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted-2);
+      font-size: 11px;
+    }
+
+    .status-tabs {
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .tab {
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 720;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      color: var(--accent-2);
+      background: #fffefa;
+      box-shadow: 0 1px 3px rgba(60, 51, 36, 0.12);
+    }
+
+    .table-wrap {
+      min-height: 360px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: auto;
+      background: var(--surface);
+    }
+
+    table {
+      width: 100%;
+      min-width: 1360px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding: 10px 16px 10px 8px;
+      color: #504a3f;
+      border-bottom: 1px solid var(--line);
+      background: #f8f3e8;
+      font-size: 12px;
+      font-weight: 760;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .column-resizer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 5;
+      width: 10px;
+      height: 100%;
+      cursor: col-resize;
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    .column-resizer::after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      right: 0;
+      width: 1px;
+      background: transparent;
+      transition: background 120ms ease;
+    }
+
+    thead th:hover .column-resizer::after,
+    .column-resizer:focus-visible::after,
+    body.column-resizing .column-resizer::after {
+      background: var(--accent);
+    }
+
+    body.column-resizing {
+      cursor: col-resize;
+      user-select: none;
+    }
+
+    body.column-resizing * {
+      cursor: col-resize !important;
+    }
+
+    tbody td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #ebe5da;
+      color: #37332c;
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    tbody td:not(:first-child):not(:last-child) {
+      white-space: nowrap;
+    }
+
+    tbody td:last-child {
+      overflow: visible;
+    }
+
+    tbody tr:hover {
+      background: #fffaf1;
+    }
+
+    .col-detail {
+      min-width: 180px;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 690;
+    }
+
+    .money {
+      font-variant-numeric: tabular-nums;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .badge.neutral {
+      color: #655d50;
+      background: #eee8dc;
+    }
+
+    .badge.done {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .badge.pending {
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .badge.missing {
+      color: var(--muted);
+      background: #f1eee7;
+    }
+
+    .invoice-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .invoice-name {
+      min-width: 0;
+      overflow: hidden;
+      color: #4a453b;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      white-space: nowrap;
+    }
+
+    .row-actions .button.icon-only {
+      width: 32px;
+      min-height: 32px;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 340px;
+      padding: 30px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #3b362e;
+      font-size: 16px;
+    }
+
+    .drawer {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      background: rgba(40, 36, 30, 0.28);
+    }
+
+    .drawer.open {
+      display: block;
+    }
+
+    .drawer-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      width: min(560px, 100%);
+      height: 100%;
+      border-left: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: -20px 0 42px rgba(55, 45, 30, 0.16);
+    }
+
+    .drawer-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 20px;
+      border-bottom: 1px solid var(--line);
+      background: #fffaf1;
+    }
+
+    .drawer-head h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .drawer-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .drawer-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px 20px 22px;
+    }
+
+    .directory-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 14px;
+    }
+
+    .file-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .dir-file {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fffefa;
+    }
+
+    .dir-name {
+      overflow: hidden;
+      color: #343028;
+      font-weight: 690;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dir-meta {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 60;
+      max-width: min(420px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border: 1px solid rgba(22, 118, 111, 0.25);
+      border-radius: var(--radius);
+      color: #193f3b;
+      background: #effaf7;
+      box-shadow: 0 12px 30px rgba(38, 33, 22, 0.16);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        width: calc(100% - 16px);
+        padding: 10px 0 24px;
+      }
+
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .main {
+        min-height: 680px;
+      }
+
+      .topbar,
+      .filters {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+
+      .topbar {
+        display: grid;
+      }
+
+      .toolbar-actions {
+        justify-content: flex-start;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .side,
+      .topbar,
+      .content {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .brand {
+        align-items: flex-start;
+      }
+
+      .brand-title {
+        font-size: 22px;
+      }
+
+      .form-row,
+      .switch-grid,
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .form-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .toolbar-actions,
+      .directory-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .button.icon-only,
+      .button.small {
+        width: auto;
+      }
+
+      .filters {
+        display: grid;
+      }
+
+      .status-tabs {
+        overflow-x: auto;
+      }
+
+      .project-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg class="sr-only" aria-hidden="true">
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+      <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path>
+      <path d="M8 6h7"></path>
+      <path d="M8 10h8"></path>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14"></path>
+      <path d="M5 12h14"></path>
+    </symbol>
+    <symbol id="i-save" viewBox="0 0 24 24">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+      <path d="M17 21v-8H7v8"></path>
+      <path d="M7 3v5h8"></path>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <path d="M17 8l-5-5-5 5"></path>
+      <path d="M12 3v12"></path>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <path d="M7 10l5 5 5-5"></path>
+      <path d="M12 15V3"></path>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <path d="M14 2v6h6"></path>
+      <path d="M8 13h8"></path>
+      <path d="M8 17h5"></path>
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24">
+      <path d="M3 6h18"></path>
+      <path d="M8 6V4h8v2"></path>
+      <path d="M19 6l-1 14H6L5 6"></path>
+      <path d="M10 11v6"></path>
+      <path d="M14 11v6"></path>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="M21 21l-4.3-4.3"></path>
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24">
+      <path d="M18 6 6 18"></path>
+      <path d="m6 6 12 12"></path>
+    </symbol>
+  </svg>
+
+  <main class="app">
+    <div class="shell">
+      <aside class="side">
+        <header class="brand">
+          <div>
+            <h1 class="brand-title">本地记账单</h1>
+            <p class="brand-sub">离线保存支出、报销状态与票据附件</p>
+            <p class="brand-author">Monash University · Ying-Jian Song</p>
+          </div>
+          <div class="mark" aria-hidden="true">
+            <svg class="icon"><use href="#i-book"></use></svg>
+          </div>
+        </header>
+
+        <section class="panel" aria-labelledby="entryTitle">
+          <div class="panel-head">
+            <h2 class="panel-title" id="entryTitle">新增支出</h2>
+            <span class="hint" id="editHint">本地保存</span>
+          </div>
+          <form class="entry-form" id="entryForm">
+            <input type="hidden" id="recordId">
+            <div class="field">
+              <label for="project">所属项目</label>
+              <input id="project" name="project" type="text" autocomplete="off" list="projectOptions" placeholder="例如：项目A、项目B、行政费用">
+              <datalist id="projectOptions"></datalist>
+              <span class="hint">导入 PDF/PNG 前也要先填写或选择这个项目。</span>
+            </div>
+
+            <div class="field">
+              <label for="detail">支出明细</label>
+              <input id="detail" name="detail" type="text" autocomplete="off" placeholder="例如：客户午餐、交通费、软件订阅" required>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="payer">支付人</label>
+                <input id="payer" name="payer" type="text" autocomplete="off" placeholder="姓名或部门" required>
+              </div>
+              <div class="field">
+                <label for="partyType">个人/机构</label>
+                <select id="partyType" name="partyType">
+                  <option value="个人">个人</option>
+                  <option value="机构">机构</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="amount">金额</label>
+              <input id="amount" name="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" required>
+            </div>
+
+            <div class="switch-grid" aria-label="状态">
+              <label class="check-tile">
+                <input id="reimbursed" name="reimbursed" type="checkbox">
+                <span class="switch-label">是否已报销</span>
+              </label>
+              <label class="check-tile">
+                <input id="pending" name="pending" type="checkbox">
+                <span class="switch-label">待支付</span>
+              </label>
+            </div>
+
+            <div class="field">
+              <span class="upload-label">发票信息</span>
+              <div class="upload-box">
+                <div class="upload-line">
+                  <svg class="icon"><use href="#i-upload"></use></svg>
+                  <span class="file-name" id="invoiceLabel">上传 PDF / 图片，可留空</span>
+                </div>
+                <input class="file-input" id="invoiceFile" name="invoiceFile" type="file" accept="application/pdf,image/*">
+                <span class="hint" id="currentInvoice"></span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="button" id="submitButton" type="submit">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                <span>新增记录</span>
+              </button>
+              <button class="button secondary" id="resetButton" type="button">重置</button>
+            </div>
+          </form>
+        </section>
+      </aside>
+
+      <section class="main">
+        <div class="topbar">
+          <div class="toolbar-title">
+            <h2>支出明细</h2>
+            <p id="storageState">正在读取本地数据...</p>
+          </div>
+          <div class="toolbar-actions">
+            <button class="button secondary" id="openDirectoryButton" type="button">
+              <svg class="icon"><use href="#i-folder"></use></svg>
+              <span>打开票据根目录</span>
+            </button>
+            <button class="button secondary" id="exportButton" type="button">
+              <svg class="icon"><use href="#i-download"></use></svg>
+              <span>导出数据</span>
+            </button>
+            <button class="button secondary" id="importButton" type="button">
+              <svg class="icon"><use href="#i-upload"></use></svg>
+              <span>导入数据</span>
+            </button>
+            <button class="button secondary" id="invoiceBatchButton" type="button">
+              <svg class="icon"><use href="#i-file"></use></svg>
+              <span>导入PDF/PNG</span>
+            </button>
+            <button class="button secondary" id="bindDataDirectoryButton" type="button">
+              <svg class="icon"><use href="#i-save"></use></svg>
+              <span>绑定data.json</span>
+            </button>
+            <input class="sr-only" id="importFile" type="file" accept="application/json">
+            <input class="sr-only" id="invoiceBatchInput" type="file" accept="application/pdf,image/png,.pdf,.png" multiple>
+            <input class="sr-only" id="directoryInput" type="file" webkitdirectory multiple accept="application/pdf,image/*">
+          </div>
+        </div>
+
+        <div class="summary" aria-label="统计">
+          <div class="metric">
+            <p class="metric-label">总金额</p>
+            <p class="metric-value" id="totalAmount">¥0.00</p>
+          </div>
+          <div class="metric">
+            <p class="metric-label">待支付</p>
+            <p class="metric-value pending" id="pendingAmount">¥0.00</p>
+          </div>
+          <div class="metric">
+            <p class="metric-label">已报销</p>
+            <p class="metric-value done" id="reimbursedAmount">¥0.00</p>
+          </div>
+          <div class="metric">
+            <p class="metric-label">记录数</p>
+            <p class="metric-value" id="recordCount">0</p>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="filters">
+            <div class="field">
+              <label class="sr-only" for="searchInput">搜索</label>
+              <input id="searchInput" type="search" placeholder="搜索项目、支出明细、支付人、发票名称">
+            </div>
+            <div class="field">
+              <label class="sr-only" for="projectFilter">项目筛选</label>
+              <select id="projectFilter">
+                <option value="all">全部项目</option>
+              </select>
+            </div>
+            <div class="status-tabs" role="tablist" aria-label="筛选状态">
+              <button class="tab active" type="button" data-filter="all">全部</button>
+              <button class="tab" type="button" data-filter="pending">待支付</button>
+              <button class="tab" type="button" data-filter="reimbursed">已报销</button>
+              <button class="tab" type="button" data-filter="unreimbursed">未报销</button>
+            </div>
+          </div>
+
+          <section class="project-panel" aria-labelledby="projectOverviewTitle">
+            <div class="project-panel-head">
+              <div>
+                <h3 id="projectOverviewTitle">项目支出</h3>
+                <p id="projectOverviewMeta">按项目查看每个项目下面有哪些支出。</p>
+              </div>
+            </div>
+            <div class="project-grid" id="projectGroups"></div>
+          </section>
+
+          <section class="project-panel" aria-labelledby="personOverviewTitle">
+            <div class="project-panel-head">
+              <div>
+                <h3 id="personOverviewTitle">个人支出</h3>
+                <p id="personOverviewMeta">按支付人查看个人类型的支出合计。</p>
+              </div>
+            </div>
+            <div class="project-grid" id="personGroups"></div>
+          </section>
+
+          <div class="table-wrap" id="tableWrap">
+            <table aria-label="记账记录">
+              <colgroup>
+                <col style="width: 13%;">
+                <col style="width: 9%;">
+                <col style="width: 13%;">
+                <col style="width: 7%;">
+                <col style="width: 8%;">
+                <col style="width: 7%;">
+                <col style="width: 8%;">
+                <col style="width: 8%;">
+                <col style="width: 7%;">
+                <col style="width: 8%;">
+                <col style="width: 12%;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>支出明细</th>
+                  <th>所属项目</th>
+                  <th>支付人</th>
+                  <th>个人/机构</th>
+                  <th>是否已报销</th>
+                  <th>待支付</th>
+                  <th>金额</th>
+                  <th>是否开票</th>
+                  <th>发票信息</th>
+                  <th>日期</th>
+                  <th style="text-align:right;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
+            <div class="empty" id="emptyState" hidden>
+              <div>
+                <strong>还没有记账记录</strong>
+                <span>在左侧录入第一笔支出，数据会保存在本机浏览器中。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <section class="drawer" id="directoryDrawer" aria-hidden="true">
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="directoryTitle">
+      <div class="drawer-head">
+        <div>
+          <h3 id="directoryTitle">票据根目录</h3>
+          <p id="directorySubtitle">选择一个本地文件夹后，可在这里打开 PDF / 图片票据。</p>
+        </div>
+        <button class="button secondary icon-only" id="closeDirectoryButton" type="button" aria-label="关闭">
+          <svg class="icon"><use href="#i-x"></use></svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <div class="directory-actions">
+          <button class="button" id="chooseDirectoryButton" type="button">
+            <svg class="icon"><use href="#i-folder"></use></svg>
+            <span>选择目录</span>
+          </button>
+          <button class="button secondary" id="refreshDirectoryButton" type="button">
+            <svg class="icon"><use href="#i-search"></use></svg>
+            <span>刷新列表</span>
+          </button>
+        </div>
+        <div class="file-list" id="directoryFiles"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const DB_NAME = "local-ledger-db";
+    const DB_VERSION = 1;
+    const RECORD_STORE = "records";
+    const META_STORE = "meta";
+    const EXPORT_VERSION = 1;
+    const DATA_FILE_NAME = "data.json";
+    const DATA_DIRECTORY_META_KEY = "ledgerDataDirectory";
+    const COLUMN_WIDTHS_KEY = "local-ledger-column-widths-v1";
+    const COLUMN_MIN_WIDTHS = [120, 100, 150, 76, 92, 82, 92, 90, 120, 96, 132];
+
+    const state = {
+      db: null,
+      records: [],
+      filter: "all",
+      projectFilter: "all",
+      search: "",
+      rootHandle: null,
+      dataDirectoryHandle: null,
+      directoryFallbackFiles: []
+    };
+
+    const els = {
+      form: document.getElementById("entryForm"),
+      recordId: document.getElementById("recordId"),
+      project: document.getElementById("project"),
+      projectOptions: document.getElementById("projectOptions"),
+      detail: document.getElementById("detail"),
+      payer: document.getElementById("payer"),
+      partyType: document.getElementById("partyType"),
+      amount: document.getElementById("amount"),
+      reimbursed: document.getElementById("reimbursed"),
+      pending: document.getElementById("pending"),
+      invoiceFile: document.getElementById("invoiceFile"),
+      invoiceLabel: document.getElementById("invoiceLabel"),
+      currentInvoice: document.getElementById("currentInvoice"),
+      submitButton: document.getElementById("submitButton"),
+      resetButton: document.getElementById("resetButton"),
+      editHint: document.getElementById("editHint"),
+      recordsBody: document.getElementById("recordsBody"),
+      emptyState: document.getElementById("emptyState"),
+      tableWrap: document.getElementById("tableWrap"),
+      table: document.querySelector("#tableWrap table"),
+      totalAmount: document.getElementById("totalAmount"),
+      pendingAmount: document.getElementById("pendingAmount"),
+      reimbursedAmount: document.getElementById("reimbursedAmount"),
+      recordCount: document.getElementById("recordCount"),
+      storageState: document.getElementById("storageState"),
+      searchInput: document.getElementById("searchInput"),
+      projectFilter: document.getElementById("projectFilter"),
+      projectGroups: document.getElementById("projectGroups"),
+      projectOverviewMeta: document.getElementById("projectOverviewMeta"),
+      personGroups: document.getElementById("personGroups"),
+      personOverviewMeta: document.getElementById("personOverviewMeta"),
+      exportButton: document.getElementById("exportButton"),
+      importButton: document.getElementById("importButton"),
+      importFile: document.getElementById("importFile"),
+      invoiceBatchButton: document.getElementById("invoiceBatchButton"),
+      invoiceBatchInput: document.getElementById("invoiceBatchInput"),
+      bindDataDirectoryButton: document.getElementById("bindDataDirectoryButton"),
+      openDirectoryButton: document.getElementById("openDirectoryButton"),
+      directoryInput: document.getElementById("directoryInput"),
+      directoryDrawer: document.getElementById("directoryDrawer"),
+      closeDirectoryButton: document.getElementById("closeDirectoryButton"),
+      chooseDirectoryButton: document.getElementById("chooseDirectoryButton"),
+      refreshDirectoryButton: document.getElementById("refreshDirectoryButton"),
+      directoryFiles: document.getElementById("directoryFiles"),
+      directorySubtitle: document.getElementById("directorySubtitle"),
+      toast: document.getElementById("toast")
+    };
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(RECORD_STORE)) {
+            const records = db.createObjectStore(RECORD_STORE, { keyPath: "id" });
+            records.createIndex("createdAt", "createdAt", { unique: false });
+            records.createIndex("payer", "payer", { unique: false });
+          }
+          if (!db.objectStoreNames.contains(META_STORE)) {
+            db.createObjectStore(META_STORE, { keyPath: "key" });
+          }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function tx(storeName, mode, callback) {
+      return new Promise((resolve, reject) => {
+        const transaction = state.db.transaction(storeName, mode);
+        const store = transaction.objectStore(storeName);
+        let request;
+
+        try {
+          request = callback(store);
+        } catch (error) {
+          reject(error);
+          return;
+        }
+
+        transaction.oncomplete = () => resolve(request && "result" in request ? request.result : undefined);
+        transaction.onerror = () => reject(transaction.error);
+      });
+    }
+
+    function getAllRecords() {
+      return tx(RECORD_STORE, "readonly", (store) => store.getAll());
+    }
+
+    function putRecord(record) {
+      return tx(RECORD_STORE, "readwrite", (store) => store.put(record));
+    }
+
+    function deleteRecord(id) {
+      return tx(RECORD_STORE, "readwrite", (store) => store.delete(id));
+    }
+
+    function putMeta(key, value) {
+      return tx(META_STORE, "readwrite", (store) => store.put({ key, value }));
+    }
+
+    function getMeta(key) {
+      return tx(META_STORE, "readonly", (store) => store.get(key));
+    }
+
+    function tableColumns() {
+      return Array.from(els.table.querySelectorAll("col"));
+    }
+
+    function tableHeaders() {
+      return Array.from(els.table.querySelectorAll("thead th"));
+    }
+
+    function currentColumnWidths() {
+      return tableHeaders().map((header, index) => {
+        const measured = header.getBoundingClientRect().width;
+        return Math.max(COLUMN_MIN_WIDTHS[index] || 72, Math.round(measured));
+      });
+    }
+
+    function setColumnWidths(widths) {
+      const columns = tableColumns();
+      const normalized = widths.map((width, index) => Math.max(COLUMN_MIN_WIDTHS[index] || 72, Math.round(Number(width) || 0)));
+      const total = normalized.reduce((sum, width) => sum + width, 0);
+      els.table.style.width = `${Math.max(total, els.tableWrap.clientWidth)}px`;
+      normalized.forEach((width, index) => {
+        if (columns[index]) columns[index].style.width = `${width}px`;
+      });
+      return normalized;
+    }
+
+    function saveColumnWidths(widths) {
+      try {
+        localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(widths));
+      } catch (error) {
+        console.warn("无法保存表格列宽：", error);
+      }
+    }
+
+    function applySavedColumnWidths() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(COLUMN_WIDTHS_KEY) || "null");
+        if (Array.isArray(saved) && saved.length === tableColumns().length) {
+          setColumnWidths(saved);
+        }
+      } catch (error) {
+        console.warn("无法读取表格列宽：", error);
+      }
+    }
+
+    function initColumnResizing() {
+      const headers = tableHeaders();
+      applySavedColumnWidths();
+
+      headers.forEach((header, index) => {
+        const handle = document.createElement("span");
+        handle.className = "column-resizer";
+        handle.setAttribute("role", "separator");
+        handle.setAttribute("aria-orientation", "vertical");
+        handle.setAttribute("aria-label", "拖动调整列宽");
+        handle.tabIndex = 0;
+
+        handle.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const startX = event.clientX;
+          const startWidths = setColumnWidths(currentColumnWidths());
+          const startWidth = startWidths[index];
+          let latestWidths = startWidths;
+          document.body.classList.add("column-resizing");
+
+          if (handle.setPointerCapture) {
+            handle.setPointerCapture(event.pointerId);
+          }
+
+          const onMove = (moveEvent) => {
+            const delta = moveEvent.clientX - startX;
+            latestWidths = [...startWidths];
+            latestWidths[index] = startWidth + delta;
+            latestWidths = setColumnWidths(latestWidths);
+          };
+
+          const stopResize = () => {
+            document.removeEventListener("pointermove", onMove);
+            document.removeEventListener("pointerup", stopResize);
+            document.removeEventListener("pointercancel", stopResize);
+            document.body.classList.remove("column-resizing");
+            saveColumnWidths(latestWidths);
+          };
+
+          document.addEventListener("pointermove", onMove);
+          document.addEventListener("pointerup", stopResize);
+          document.addEventListener("pointercancel", stopResize);
+        });
+
+        header.appendChild(handle);
+      });
+    }
+
+    function uid() {
+      if (crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return `rec-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function money(value) {
+      return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency: "CNY",
+        minimumFractionDigits: 2
+      }).format(Number(value) || 0);
+    }
+
+    function dateText(value) {
+      if (!value) return "-";
+      return new Intl.DateTimeFormat("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date(value));
+    }
+
+    function sizeText(size) {
+      if (!size) return "0 B";
+      const units = ["B", "KB", "MB", "GB"];
+      let current = size;
+      let index = 0;
+      while (current >= 1024 && index < units.length - 1) {
+        current /= 1024;
+        index += 1;
+      }
+      return `${current.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+    }
+
+    function isInvoiceFile(file) {
+      if (!file) return false;
+      const type = file.type || "";
+      const name = file.name || "";
+      return type === "application/pdf" || type.startsWith("image/") || /\.(pdf|png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+    }
+
+    function isBatchInvoiceFile(file) {
+      if (!file) return false;
+      const type = file.type || "";
+      const name = file.name || "";
+      return type === "application/pdf" || type === "image/png" || /\.(pdf|png)$/i.test(name);
+    }
+
+    function parseInvoiceFileName(fileName) {
+      const baseName = String(fileName || "").replace(/\.[^.]+$/, "");
+      const normalized = baseName.replace(/[–—－]/g, "-");
+      const match = normalized.match(/^(.+?)-(.+)-([\d,]+(?:\.\d+)?)-(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+      if (!match) return null;
+
+      const payer = match[1].trim();
+      const detail = match[2].trim();
+      const amount = Number(match[3].replace(/,/g, ""));
+      const year = Number(match[4]);
+      const month = Number(match[5]);
+      const day = Number(match[6]);
+      const date = new Date(year, month - 1, day, 12, 0, 0);
+
+      if (!payer || !detail || !Number.isFinite(amount) || amount < 0) return null;
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+
+      return {
+        payer,
+        detail,
+        amount,
+        createdAt: date.toISOString()
+      };
+    }
+
+    function toast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => els.toast.classList.remove("show"), 2800);
+    }
+
+    function projectName(value) {
+      const name = String(value || "").trim();
+      return name || "未归属项目";
+    }
+
+    function payerName(value) {
+      const name = String(value || "").trim();
+      return name || "未填写支付人";
+    }
+
+    function projectsFromRecords(records) {
+      return [...new Set(records.map((record) => projectName(record.project)))]
+        .sort((a, b) => a.localeCompare(b, "zh-CN"));
+    }
+
+    function updateProjectControls() {
+      const projects = projectsFromRecords(state.records);
+      if (state.projectFilter !== "all" && !projects.includes(state.projectFilter)) {
+        state.projectFilter = "all";
+      }
+
+      els.projectFilter.innerHTML = [
+        '<option value="all">全部项目</option>',
+        ...projects.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+      ].join("");
+      els.projectFilter.value = state.projectFilter;
+
+      els.projectOptions.innerHTML = projects
+        .filter((name) => name !== "未归属项目")
+        .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+        .join("");
+    }
+
+    function projectGroups(records) {
+      const groups = new Map();
+      for (const record of records) {
+        const name = projectName(record.project);
+        if (!groups.has(name)) {
+          groups.set(name, { name, records: [], total: 0, pending: 0 });
+        }
+        const group = groups.get(name);
+        group.records.push(record);
+        group.total += Number(record.amount || 0);
+        if (record.pending) group.pending += Number(record.amount || 0);
+      }
+      return [...groups.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "zh-CN"));
+    }
+
+    function renderProjectGroups(records) {
+      const groups = projectGroups(records);
+      const allProjects = projectsFromRecords(state.records).length;
+      els.projectOverviewMeta.textContent = state.projectFilter === "all"
+        ? `共 ${allProjects} 个项目，当前显示 ${groups.length} 个项目的支出。`
+        : `当前只看“${state.projectFilter}”下面的支出。`;
+
+      if (!groups.length) {
+        els.projectGroups.innerHTML = `<div class="empty">
+          <div>
+            <strong>没有匹配的项目支出</strong>
+            <span>新增支出时填写“所属项目”，这里会自动按项目汇总。</span>
+          </div>
+        </div>`;
+        return;
+      }
+
+      els.projectGroups.innerHTML = groups.map((group) => {
+        const rows = group.records
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .map((record) => `<div class="project-item">
+            <span class="project-item-name" title="${escapeHtml(record.detail)}">
+              ${escapeHtml(record.detail)}
+              <span class="project-item-meta">${escapeHtml(record.payer)} · ${dateText(record.createdAt)}</span>
+            </span>
+            <strong class="money">${money(record.amount)}</strong>
+          </div>`)
+          .join("");
+
+        return `<article class="project-card">
+          <div class="project-card-head">
+            <div>
+              <h4 class="project-title" title="${escapeHtml(group.name)}">${escapeHtml(group.name)}</h4>
+              <span class="project-count">${group.records.length} 笔支出 · 待支付 ${money(group.pending)}</span>
+            </div>
+            <button class="button secondary small" type="button" data-project-filter="${escapeHtml(group.name)}">只看</button>
+          </div>
+          <div class="project-total">${money(group.total)}</div>
+          <div class="project-items">${rows}</div>
+        </article>`;
+      }).join("");
+    }
+
+    function personGroups(records) {
+      const groups = new Map();
+      for (const record of records) {
+        if (record.partyType !== "个人") continue;
+        const name = payerName(record.payer);
+        if (!groups.has(name)) {
+          groups.set(name, { name, records: [], total: 0, pending: 0 });
+        }
+        const group = groups.get(name);
+        group.records.push(record);
+        group.total += Number(record.amount || 0);
+        if (record.pending) group.pending += Number(record.amount || 0);
+      }
+      return [...groups.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "zh-CN"));
+    }
+
+    function renderPersonGroups(records) {
+      const groups = personGroups(records);
+      const allPeople = personGroups(state.records).length;
+      els.personOverviewMeta.textContent = `共 ${allPeople} 个个人支付人，当前显示 ${groups.length} 个支付人的支出。`;
+
+      if (!groups.length) {
+        els.personGroups.innerHTML = `<div class="empty">
+          <div>
+            <strong>没有匹配的个人支出</strong>
+            <span>将“个人/机构”设为“个人”后，这里会按支付人自动汇总。</span>
+          </div>
+        </div>`;
+        return;
+      }
+
+      els.personGroups.innerHTML = groups.map((group) => {
+        const rows = group.records
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .map((record) => `<div class="project-item">
+            <span class="project-item-name" title="${escapeHtml(record.detail)}">
+              ${escapeHtml(record.detail)}
+              <span class="project-item-meta">${escapeHtml(projectName(record.project))} · ${dateText(record.createdAt)}</span>
+            </span>
+            <strong class="money">${money(record.amount)}</strong>
+          </div>`)
+          .join("");
+
+        return `<article class="project-card">
+          <div class="project-card-head">
+            <div>
+              <h4 class="project-title" title="${escapeHtml(group.name)}">${escapeHtml(group.name)}</h4>
+              <span class="project-count">${group.records.length} 笔支出 · 待支付 ${money(group.pending)}</span>
+            </div>
+            <button class="button secondary small" type="button" data-person-search="${escapeHtml(group.name)}">只看</button>
+          </div>
+          <div class="project-total">${money(group.total)}</div>
+          <div class="project-items">${rows}</div>
+        </article>`;
+      }).join("");
+    }
+
+    function setSubmitMode(record) {
+      if (record) {
+        els.recordId.value = record.id;
+        els.project.value = projectName(record.project) === "未归属项目" ? "" : projectName(record.project);
+        els.detail.value = record.detail;
+        els.payer.value = record.payer;
+        els.partyType.value = record.partyType;
+        els.amount.value = record.amount;
+        els.reimbursed.checked = Boolean(record.reimbursed);
+        els.pending.checked = Boolean(record.pending);
+        els.currentInvoice.textContent = record.invoice ? `当前附件：${record.invoice.name}` : "当前无附件";
+        els.submitButton.innerHTML = '<svg class="icon"><use href="#i-save"></use></svg><span>保存修改</span>';
+        els.editHint.textContent = "正在编辑";
+        els.detail.focus();
+      } else {
+        els.form.reset();
+        els.recordId.value = "";
+        els.invoiceLabel.textContent = "上传 PDF / 图片，可留空";
+        els.currentInvoice.textContent = "";
+        els.submitButton.innerHTML = '<svg class="icon"><use href="#i-plus"></use></svg><span>新增记录</span>';
+        els.editHint.textContent = "本地保存";
+      }
+    }
+
+    function filteredRecords() {
+      const keyword = state.search.trim().toLowerCase();
+      return state.records.filter((record) => {
+        const project = projectName(record.project);
+        const projectMatch = state.projectFilter === "all" || project === state.projectFilter;
+        const statusMatch =
+          state.filter === "all" ||
+          (state.filter === "pending" && record.pending) ||
+          (state.filter === "reimbursed" && record.reimbursed) ||
+          (state.filter === "unreimbursed" && !record.reimbursed);
+
+        if (!projectMatch) return false;
+        if (!statusMatch) return false;
+        if (!keyword) return true;
+
+        const haystack = [
+          project,
+          record.detail,
+          record.payer,
+          record.partyType,
+          record.invoice && record.invoice.name
+        ].join(" ").toLowerCase();
+        return haystack.includes(keyword);
+      });
+    }
+
+    function updateSummary() {
+      const total = state.records.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const pending = state.records
+        .filter((item) => item.pending)
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const reimbursed = state.records
+        .filter((item) => item.reimbursed)
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      els.totalAmount.textContent = money(total);
+      els.pendingAmount.textContent = money(pending);
+      els.reimbursedAmount.textContent = money(reimbursed);
+      els.recordCount.textContent = String(state.records.length);
+      const jsonState = state.dataDirectoryHandle
+        ? `JSON目录：${state.dataDirectoryHandle.name}\\${DATA_FILE_NAME}`
+        : "未绑定JSON目录";
+      els.storageState.textContent = `已保存 ${state.records.length} 条记录到本地浏览器 · ${jsonState}`;
+    }
+
+    function renderRecords() {
+      updateProjectControls();
+      const visible = filteredRecords().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      updateSummary();
+      renderProjectGroups(visible);
+      renderPersonGroups(visible);
+
+      els.emptyState.hidden = visible.length > 0;
+      els.recordsBody.innerHTML = visible.map((record) => {
+        const invoice = record.invoice;
+        const invoiceMarkup = invoice
+          ? `<div class="invoice-cell">
+              <svg class="icon"><use href="#i-file"></use></svg>
+              <span class="invoice-name" title="${escapeHtml(invoice.name)}">${escapeHtml(invoice.name)}</span>
+            </div>`
+          : `<span class="badge missing">未上传</span>`;
+
+        return `<tr>
+          <td class="col-detail" title="${escapeHtml(record.detail)}">${escapeHtml(record.detail)}</td>
+          <td><span class="badge neutral" title="${escapeHtml(projectName(record.project))}">${escapeHtml(projectName(record.project))}</span></td>
+          <td title="${escapeHtml(record.payer)}">${escapeHtml(record.payer)}</td>
+          <td><span class="badge neutral">${escapeHtml(record.partyType)}</span></td>
+          <td>${record.reimbursed ? '<span class="badge done">已报销</span>' : '<span class="badge missing">未报销</span>'}</td>
+          <td>${record.pending ? '<span class="badge pending">待支付</span>' : '<span class="badge done">已支付</span>'}</td>
+          <td class="money">${money(record.amount)}</td>
+          <td>${invoice ? '<span class="badge done">已开票</span>' : '<span class="badge missing">未开票</span>'}</td>
+          <td>${invoiceMarkup}</td>
+          <td>${dateText(record.createdAt)}</td>
+          <td>
+            <div class="row-actions">
+              <button class="button secondary small icon-only" type="button" data-action="open" data-id="${record.id}" ${invoice ? "" : "disabled"} title="打开附件" aria-label="打开附件">
+                <svg class="icon"><use href="#i-eye"></use></svg>
+              </button>
+              <button class="button secondary small icon-only" type="button" data-action="download" data-id="${record.id}" ${invoice ? "" : "disabled"} title="下载附件" aria-label="下载附件">
+                <svg class="icon"><use href="#i-download"></use></svg>
+              </button>
+              <button class="button secondary small icon-only" type="button" data-action="edit" data-id="${record.id}" title="编辑" aria-label="编辑">
+                <svg class="icon"><use href="#i-edit"></use></svg>
+              </button>
+              <button class="button danger small icon-only" type="button" data-action="delete" data-id="${record.id}" title="删除" aria-label="删除">
+                <svg class="icon"><use href="#i-trash"></use></svg>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      }).join("");
+    }
+
+    async function reloadRecords() {
+      state.records = await getAllRecords();
+      renderRecords();
+    }
+
+    function getRecord(id) {
+      return state.records.find((record) => record.id === id);
+    }
+
+    function openBlob(blob, name) {
+      const url = URL.createObjectURL(blob);
+      const opened = window.open(url, "_blank", "noopener");
+      if (!opened) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name || "invoice";
+        a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+
+    function downloadBlob(blob, name) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name || "invoice";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function dataUrlToBlob(dataUrl) {
+      const response = await fetch(dataUrl);
+      return response.blob();
+    }
+
+    async function createExportPayload() {
+      const records = [];
+      for (const record of state.records) {
+        const copy = { ...record };
+        copy.project = projectName(record.project);
+        if (record.invoice && record.invoice.blob) {
+          copy.invoice = {
+            name: record.invoice.name,
+            type: record.invoice.type,
+            size: record.invoice.size,
+            lastModified: record.invoice.lastModified,
+            dataUrl: await blobToDataUrl(record.invoice.blob)
+          };
+        }
+        records.push(copy);
+      }
+
+      const payload = {
+        app: "本地记账单",
+        version: EXPORT_VERSION,
+        exportedAt: new Date().toISOString(),
+        records
+      };
+      return payload;
+    }
+
+    async function exportData() {
+      if (!state.records.length) {
+        toast("当前没有可导出的记录。");
+        return;
+      }
+
+      const payload = await createExportPayload();
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const fileName = `本地记账单-${new Date().toISOString().slice(0, 10)}.json`;
+      downloadBlob(blob, fileName);
+      toast("数据已导出。");
+    }
+
+    async function verifyDirectoryWritePermission(handle) {
+      const options = { mode: "readwrite" };
+      if (!handle || !handle.queryPermission) return false;
+      if (await handle.queryPermission(options) === "granted") return true;
+      return await handle.requestPermission(options) === "granted";
+    }
+
+    async function saveDataDirectoryFile(options = {}) {
+      const silent = Boolean(options.silent);
+      if (!state.dataDirectoryHandle) return false;
+
+      const allowed = await verifyDirectoryWritePermission(state.dataDirectoryHandle);
+      if (!allowed) {
+        if (!silent) toast("没有目录写入权限，无法保存 JSON。");
+        return false;
+      }
+
+      const payload = await createExportPayload();
+      const fileHandle = await state.dataDirectoryHandle.getFileHandle(DATA_FILE_NAME, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+      await writable.close();
+
+      await putMeta(DATA_DIRECTORY_META_KEY, {
+        name: state.dataDirectoryHandle.name,
+        handle: state.dataDirectoryHandle
+      });
+
+      if (!silent) {
+        toast(`已保存到 ${DATA_FILE_NAME}。`);
+      }
+      updateSummary();
+      return true;
+    }
+
+    async function bindDataDirectory() {
+      if (!("showDirectoryPicker" in window)) {
+        await exportData();
+        toast("当前浏览器不支持直接写入目录，已改为下载 JSON 备份。");
+        return;
+      }
+
+      state.dataDirectoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+      await saveDataDirectoryFile();
+    }
+
+    async function autoSaveDataDirectory() {
+      if (!state.dataDirectoryHandle) return;
+      try {
+        await saveDataDirectoryFile({ silent: true });
+      } catch (error) {
+        console.warn("自动保存 JSON 失败：", error);
+      }
+    }
+
+    async function importData(file) {
+      if (!file) return;
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      if (!payload || !Array.isArray(payload.records)) {
+        throw new Error("导入文件格式不正确");
+      }
+
+      for (const incoming of payload.records) {
+        const record = {
+          id: incoming.id || uid(),
+          project: projectName(incoming.project),
+          detail: String(incoming.detail || ""),
+          payer: String(incoming.payer || ""),
+          partyType: incoming.partyType === "机构" ? "机构" : "个人",
+          reimbursed: Boolean(incoming.reimbursed),
+          pending: Boolean(incoming.pending),
+          amount: Number(incoming.amount || 0),
+          createdAt: incoming.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          invoice: null
+        };
+
+        if (incoming.invoice && incoming.invoice.dataUrl) {
+          record.invoice = {
+            name: incoming.invoice.name || "invoice",
+            type: incoming.invoice.type || "application/octet-stream",
+            size: incoming.invoice.size || 0,
+            lastModified: incoming.invoice.lastModified || Date.now(),
+            blob: await dataUrlToBlob(incoming.invoice.dataUrl)
+          };
+        }
+
+        await putRecord(record);
+      }
+
+      await reloadRecords();
+      await autoSaveDataDirectory();
+      toast(`已导入 ${payload.records.length} 条记录。`);
+    }
+
+    async function importInvoiceFiles(fileList, targetProject) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      const importProject = projectName(targetProject);
+      if (importProject === "未归属项目") {
+        toast("请先填写或选择所属项目，再导入 PDF/PNG。");
+        els.project.focus();
+        return;
+      }
+
+      let imported = 0;
+      const failed = [];
+      const detailOverride = els.detail.value.trim();
+      const payerOverride = els.payer.value.trim();
+      const hasAmountOverride = els.amount.value.trim() !== "";
+      const amountOverride = hasAmountOverride ? Number(els.amount.value) : null;
+
+      if (hasAmountOverride && (!Number.isFinite(amountOverride) || amountOverride < 0)) {
+        toast("左侧金额必须是大于或等于 0 的数字。");
+        els.amount.focus();
+        return;
+      }
+
+      for (const file of files) {
+        if (!isBatchInvoiceFile(file)) {
+          failed.push(file.name);
+          continue;
+        }
+
+        const parsed = parseInvoiceFileName(file.name);
+        if (!parsed) {
+          failed.push(file.name);
+          continue;
+        }
+
+        const record = {
+          id: uid(),
+          project: importProject,
+          detail: detailOverride || parsed.detail,
+          payer: payerOverride || parsed.payer,
+          partyType: payerOverride ? els.partyType.value : "机构",
+          reimbursed: els.reimbursed.checked,
+          pending: els.pending.checked,
+          amount: hasAmountOverride ? amountOverride : parsed.amount,
+          invoice: {
+            name: file.name,
+            type: file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/png"),
+            size: file.size,
+            lastModified: file.lastModified,
+            blob: file
+          },
+          createdAt: parsed.createdAt,
+          updatedAt: new Date().toISOString()
+        };
+
+        await putRecord(record);
+        imported += 1;
+      }
+
+      state.filter = "all";
+      state.projectFilter = "all";
+      state.search = "";
+      els.searchInput.value = "";
+      document.querySelectorAll(".tab").forEach((item) => {
+        item.classList.toggle("active", item.dataset.filter === "all");
+      });
+
+      await reloadRecords();
+      await autoSaveDataDirectory();
+
+      if (failed.length) {
+        console.warn("未导入的票据文件：", failed);
+        toast(`已导入 ${imported} 个票据，${failed.length} 个文件名格式不符合要求。`);
+      } else {
+        toast(`已导入 ${imported} 个票据。`);
+      }
+    }
+
+    async function saveForm(event) {
+      event.preventDefault();
+
+      const amount = Number(els.amount.value);
+      if (!Number.isFinite(amount) || amount < 0) {
+        toast("金额必须是大于或等于 0 的数字。");
+        return;
+      }
+
+      const file = els.invoiceFile.files[0];
+      if (file && !isInvoiceFile(file)) {
+        toast("发票信息只支持 PDF 或图片。");
+        return;
+      }
+
+      const editing = els.recordId.value ? getRecord(els.recordId.value) : null;
+      const invoice = file
+        ? {
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size,
+            lastModified: file.lastModified,
+            blob: file
+          }
+        : editing && editing.invoice
+          ? editing.invoice
+          : null;
+
+      const record = {
+        id: editing ? editing.id : uid(),
+        project: projectName(els.project.value),
+        detail: els.detail.value.trim(),
+        payer: els.payer.value.trim(),
+        partyType: els.partyType.value,
+        reimbursed: els.reimbursed.checked,
+        pending: els.pending.checked,
+        amount,
+        invoice,
+        createdAt: editing ? editing.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      await putRecord(record);
+      await reloadRecords();
+      await autoSaveDataDirectory();
+      setSubmitMode(null);
+      toast(editing ? "记录已更新。" : "记录已保存到本地。");
+    }
+
+    function setDrawer(open) {
+      els.directoryDrawer.classList.toggle("open", open);
+      els.directoryDrawer.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+
+    async function verifyPermission(handle) {
+      const options = { mode: "read" };
+      if (!handle || !handle.queryPermission) return false;
+      if (await handle.queryPermission(options) === "granted") return true;
+      return await handle.requestPermission(options) === "granted";
+    }
+
+    async function collectDirectoryFiles(handle, prefix = "", output = []) {
+      if (output.length >= 150) return output;
+      for await (const [name, entry] of handle.entries()) {
+        if (output.length >= 150) break;
+        const path = prefix ? `${prefix}/${name}` : name;
+        if (entry.kind === "file") {
+          const file = await entry.getFile();
+          if (isInvoiceFile(file)) {
+            output.push({ name, path, size: file.size, type: file.type, handle: entry });
+          }
+        } else if (entry.kind === "directory") {
+          await collectDirectoryFiles(entry, path, output);
+        }
+      }
+      return output;
+    }
+
+    function renderDirectoryFiles(files, sourceName) {
+      els.directorySubtitle.textContent = sourceName
+        ? `当前目录：${sourceName}。浏览器不会暴露完整本地路径。`
+        : "选择一个本地文件夹后，可在这里打开 PDF / 图片票据。";
+
+      if (!files.length) {
+        els.directoryFiles.innerHTML = `<div class="empty">
+          <div>
+            <strong>目录中没有 PDF / 图片</strong>
+            <span>可以更换目录，或直接在记账表单里上传发票附件。</span>
+          </div>
+        </div>`;
+        return;
+      }
+
+      els.directoryFiles.innerHTML = files.map((file, index) => `
+        <div class="dir-file">
+          <div>
+            <div class="dir-name" title="${escapeHtml(file.path || file.name)}">${escapeHtml(file.path || file.name)}</div>
+            <div class="dir-meta">${escapeHtml(file.type || "文件")} · ${sizeText(file.size)}</div>
+          </div>
+          <button class="button secondary small" type="button" data-dir-index="${index}">
+            <svg class="icon"><use href="#i-eye"></use></svg>
+            <span>打开</span>
+          </button>
+        </div>
+      `).join("");
+    }
+
+    async function openDirectory() {
+      setDrawer(true);
+
+      if ("showDirectoryPicker" in window) {
+        if (!state.rootHandle || !(await verifyPermission(state.rootHandle))) {
+          state.rootHandle = await window.showDirectoryPicker({ mode: "read" });
+          try {
+            await putMeta("invoiceRoot", {
+              name: state.rootHandle.name,
+              handle: state.rootHandle
+            });
+          } catch (error) {
+            console.warn("目录授权无法持久化：", error);
+          }
+        }
+        const files = await collectDirectoryFiles(state.rootHandle);
+        state.directoryFallbackFiles = files;
+        renderDirectoryFiles(files, state.rootHandle.name);
+        return;
+      }
+
+      els.directoryFiles.innerHTML = `<div class="empty">
+        <div>
+          <strong>当前浏览器不支持目录授权</strong>
+          <span>请使用 Chrome / Edge，或点击“选择目录”临时读取目录文件。</span>
+        </div>
+      </div>`;
+      els.directoryInput.click();
+    }
+
+    async function chooseDirectory() {
+      state.rootHandle = null;
+      if ("showDirectoryPicker" in window) {
+        await openDirectory();
+      } else {
+        els.directoryInput.click();
+      }
+    }
+
+    async function restoreDirectoryHandle() {
+      if (!("showDirectoryPicker" in window)) return;
+      try {
+        const saved = await getMeta("invoiceRoot");
+        if (saved && saved.value && saved.value.handle) {
+          state.rootHandle = saved.value.handle;
+          els.directorySubtitle.textContent = `已记住目录：${saved.value.name}。点击“打开票据根目录”授权后查看。`;
+        }
+      } catch (error) {
+        console.warn("无法恢复目录授权：", error);
+      }
+    }
+
+    async function restoreDataDirectoryHandle() {
+      if (!("showDirectoryPicker" in window)) return;
+      try {
+        const saved = await getMeta(DATA_DIRECTORY_META_KEY);
+        if (saved && saved.value && saved.value.handle) {
+          state.dataDirectoryHandle = saved.value.handle;
+          updateSummary();
+        }
+      } catch (error) {
+        console.warn("无法恢复 JSON 目录授权：", error);
+      }
+    }
+
+    async function init() {
+      try {
+        state.db = await openDatabase();
+        await reloadRecords();
+        await restoreDataDirectoryHandle();
+        await restoreDirectoryHandle();
+      } catch (error) {
+        console.error(error);
+        els.storageState.textContent = "本地数据库初始化失败";
+        toast("本地数据库初始化失败，请确认浏览器支持 IndexedDB。");
+      }
+    }
+
+    els.invoiceFile.addEventListener("change", () => {
+      const file = els.invoiceFile.files[0];
+      els.invoiceLabel.textContent = file ? `${file.name} · ${sizeText(file.size)}` : "上传 PDF / 图片，可留空";
+    });
+
+    els.form.addEventListener("submit", (event) => {
+      saveForm(event).catch((error) => {
+        console.error(error);
+        toast(error.message || "保存失败。");
+      });
+    });
+
+    els.resetButton.addEventListener("click", () => setSubmitMode(null));
+
+    els.searchInput.addEventListener("input", () => {
+      state.search = els.searchInput.value;
+      renderRecords();
+    });
+
+    els.projectFilter.addEventListener("change", () => {
+      state.projectFilter = els.projectFilter.value;
+      renderRecords();
+    });
+
+    els.projectGroups.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-project-filter]");
+      if (!button) return;
+      state.projectFilter = button.dataset.projectFilter;
+      els.projectFilter.value = state.projectFilter;
+      renderRecords();
+    });
+
+    els.personGroups.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-person-search]");
+      if (!button) return;
+      state.search = button.dataset.personSearch;
+      els.searchInput.value = state.search;
+      renderRecords();
+    });
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
+        tab.classList.add("active");
+        state.filter = tab.dataset.filter;
+        renderRecords();
+      });
+    });
+
+    els.recordsBody.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const record = getRecord(button.dataset.id);
+      if (!record) return;
+
+      const action = button.dataset.action;
+      if (action === "open" && record.invoice) {
+        openBlob(record.invoice.blob, record.invoice.name);
+      }
+      if (action === "download" && record.invoice) {
+        downloadBlob(record.invoice.blob, record.invoice.name);
+      }
+      if (action === "edit") {
+        setSubmitMode(record);
+      }
+      if (action === "delete") {
+        const ok = confirm(`确定删除“${record.detail}”吗？附件也会从本地数据库移除。`);
+        if (!ok) return;
+        await deleteRecord(record.id);
+        await reloadRecords();
+        await autoSaveDataDirectory();
+        if (els.recordId.value === record.id) setSubmitMode(null);
+        toast("记录已删除。");
+      }
+    });
+
+    els.exportButton.addEventListener("click", () => {
+      exportData().catch((error) => {
+        console.error(error);
+        toast("导出失败，请稍后重试。");
+      });
+    });
+
+    els.importButton.addEventListener("click", () => els.importFile.click());
+    els.importFile.addEventListener("change", () => {
+      importData(els.importFile.files[0])
+        .catch((error) => {
+          console.error(error);
+          toast(error.message || "导入失败。");
+        })
+        .finally(() => {
+          els.importFile.value = "";
+        });
+    });
+
+    els.bindDataDirectoryButton.addEventListener("click", () => {
+      bindDataDirectory().catch((error) => {
+        if (error && error.name === "AbortError") return;
+        console.error(error);
+        toast("绑定 JSON 目录失败。");
+      });
+    });
+
+    els.invoiceBatchButton.addEventListener("click", () => {
+      if (projectName(els.project.value) === "未归属项目") {
+        toast("请先在左侧填写或选择所属项目，再导入 PDF/PNG。");
+        els.project.focus();
+        return;
+      }
+      els.invoiceBatchInput.click();
+    });
+    els.invoiceBatchInput.addEventListener("change", () => {
+      importInvoiceFiles(els.invoiceBatchInput.files, els.project.value)
+        .catch((error) => {
+          console.error(error);
+          toast(error.message || "导入PDF/PNG失败。");
+        })
+        .finally(() => {
+          els.invoiceBatchInput.value = "";
+        });
+    });
+
+    els.openDirectoryButton.addEventListener("click", () => {
+      openDirectory().catch((error) => {
+        if (error && error.name === "AbortError") return;
+        console.error(error);
+        toast("无法打开目录。普通网页不能直接启动系统文件管理器。");
+      });
+    });
+
+    els.chooseDirectoryButton.addEventListener("click", () => {
+      chooseDirectory().catch((error) => {
+        if (error && error.name === "AbortError") return;
+        console.error(error);
+        toast("选择目录失败。");
+      });
+    });
+
+    els.refreshDirectoryButton.addEventListener("click", () => {
+      if ("showDirectoryPicker" in window && state.rootHandle) {
+        openDirectory().catch((error) => {
+          console.error(error);
+          toast("刷新目录失败。");
+        });
+      } else {
+        els.directoryInput.click();
+      }
+    });
+
+    els.closeDirectoryButton.addEventListener("click", () => setDrawer(false));
+    els.directoryDrawer.addEventListener("click", (event) => {
+      if (event.target === els.directoryDrawer) setDrawer(false);
+    });
+
+    els.directoryInput.addEventListener("change", () => {
+      const files = Array.from(els.directoryInput.files || [])
+        .filter(isInvoiceFile)
+        .map((file) => ({
+          name: file.name,
+          path: file.webkitRelativePath || file.name,
+          size: file.size,
+          type: file.type,
+          file
+        }));
+      state.directoryFallbackFiles = files;
+      setDrawer(true);
+      renderDirectoryFiles(files, files[0] && files[0].path ? files[0].path.split("/")[0] : "临时目录");
+      els.directoryInput.value = "";
+    });
+
+    els.directoryFiles.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-dir-index]");
+      if (!button) return;
+      const fileInfo = state.directoryFallbackFiles[Number(button.dataset.dirIndex)];
+      if (!fileInfo) return;
+
+      if (fileInfo.handle) {
+        const file = await fileInfo.handle.getFile();
+        openBlob(file, file.name);
+      } else if (fileInfo.file) {
+        openBlob(fileInfo.file, fileInfo.name);
+      }
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && els.directoryDrawer.classList.contains("open")) {
+        setDrawer(false);
+      }
+    });
+
+    initColumnResizing();
+    init();
+  </script>
+</body>
+</html>
